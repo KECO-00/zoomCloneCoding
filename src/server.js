@@ -1,5 +1,6 @@
 import http from "http";
-import {WebSocketServer} from "ws";
+// import {WebSocketServer} from "ws";
+import {Server} from "socket.io";
 import express from "express";
 import path from 'path';
 
@@ -19,35 +20,52 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 // app.listen(3000, handleListen);
 
 // ws 적용 방식
-const server = http.createServer(app);
-const wss = new WebSocketServer({server});
+const httpServer = http.createServer(app);
+const wsServer = new Server(httpServer);
 
-//fake database
-const sockets = [];
-
-//server.js에서의 socket은 연결된 브라우저를 의미
-wss.on("connection", (socket) => {
-    // console.log(socket);
-    sockets.push(socket);
-    socket["nickname"] = "Anon";
-    console.log("Connected to Browser ✔");
-    socket.on("close", () => console.log("Disconnected from Browser ❌"))
-    socket.on("message", (msg) => {
-        const message = JSON.parse(msg);
-
-        switch(message.type){
-            case "new_message":
-                sockets.forEach(aSocket => aSocket.send(`${socket.nickname}: ${message.payload}`));
-                break;
-            case "nickname":
-                socket["nickname"] = message.payload;
-                break;
-        }
-        
-        // console.log(message.toString());
-        // socket.send(message.toString());
+wsServer.on("connection", socket => {
+    socket.onAny((event) => {
+        console.log(`Socket Event: ${event}`);
     });
-    // socket.send("Hello!");
+    socket.on("enter_room", (roomName, done) => {
+        console.log(socket.id);
+        console.log(socket.rooms);
+        socket.join(roomName);
+        console.log(socket.rooms);
+        setTimeout(() => {
+            done("hello from backend"); 
+        }, 3000);
+    });
 });
 
-server.listen(3000, handleListen);
+// const wss = new WebSocketServer({server});
+
+// //fake database
+// const sockets = [];
+
+// //server.js에서의 socket은 연결된 브라우저를 의미
+// wss.on("connection", (socket) => {
+//     // console.log(socket);
+//     sockets.push(socket);
+//     socket["nickname"] = "Anon";
+//     console.log("Connected to Browser ✔");
+//     socket.on("close", () => console.log("Disconnected from Browser ❌"))
+//     socket.on("message", (msg) => {
+//         const message = JSON.parse(msg);
+
+//         switch(message.type){
+//             case "new_message":
+//                 sockets.forEach(aSocket => aSocket.send(`${socket.nickname}: ${message.payload}`));
+//                 break;
+//             case "nickname":
+//                 socket["nickname"] = message.payload;
+//                 break;
+//         }
+        
+//         // console.log(message.toString());
+//         // socket.send(message.toString());
+//     });
+//     // socket.send("Hello!");
+// });
+
+httpServer.listen(3000, handleListen);
