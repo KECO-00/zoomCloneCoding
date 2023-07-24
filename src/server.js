@@ -23,19 +23,24 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 const httpServer = http.createServer(app);
 const wsServer = new Server(httpServer);
 
-wsServer.on("connection", socket => {
+wsServer.on("connection", (socket) => {
+    socket["nickname"] = "Anon";
     socket.onAny((event) => {
         console.log(`Socket Event: ${event}`);
     });
     socket.on("enter_room", (roomName, done) => {
-        console.log(socket.id);
-        console.log(socket.rooms);
         socket.join(roomName);
-        console.log(socket.rooms);
-        setTimeout(() => {
-            done("hello from backend"); 
-        }, 3000);
+        done();
+        socket.to(roomName).emit("welcome", socket.nickname);
     });
+    socket.on("disconnecting", () => {
+        socket.rooms.forEach(room => socket.to(room).emit("bye", socket.nickname));
+    });
+    socket.on("New_message", (msg, room, done) => {
+        socket.to(room).emit("New_message", `${socket.nickname}: ${msg}`);
+        done();
+    });
+    socket.on("nickname", nickname => socket["nickname"] = nickname);
 });
 
 // const wss = new WebSocketServer({server});
