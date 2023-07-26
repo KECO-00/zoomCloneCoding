@@ -3,7 +3,7 @@ import http from "http";
 import {Server} from "socket.io";
 import express from "express";
 import path from 'path';
-import { instrument } from "@socket.io/admin-ui";
+// import { instrument } from "@socket.io/admin-ui";
 
 const __dirname = path.resolve();
 
@@ -25,12 +25,19 @@ const httpServer = http.createServer(app);
 const wsServer = new Server(httpServer);
 
 wsServer.on("connection", socket => {
-    socket.on("join_room", (roomName, done) => {
+    socket.on("join_room", (roomName) => {
         socket.join(roomName);
-        done();
         socket.to(roomName).emit("welcome");
     });
-    socket.on("offer", offer, roomName)
-})
+    socket.on("offer", (offer, roomName) => {
+        socket.to(roomName).emit("offer", offer);
+    });
+    socket.on("answer", (answer, roomName) => {
+        socket.to(roomName).emit("answer", answer);
+    });
+    socket.on("ice", (ice, roomName) => {
+        socket.to(roomName).emit("ice", ice);
+    });
+});
 
 httpServer.listen(3000, handleListen);
